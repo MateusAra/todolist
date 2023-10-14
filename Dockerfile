@@ -1,17 +1,21 @@
-FROM ubuntu:latest AS build
+# Use uma imagem base que já contenha o JDK e o Maven
+FROM maven:3.8.4-openjdk-17 AS build
 
-
-RUN apt-get update
-RUN apt-get install openjdk-17-jdk -y
-
-FROM openjdk:17-jdk-slim
+# Crie um diretório de trabalho e copie o código-fonte para ele
+WORKDIR /app
 COPY . .
 
-RUN apt-get install maven -y
+# Execute o comando Maven para construir o projeto
 RUN mvn clean install
 
+# Altere a imagem base para uma imagem menor que contenha apenas o JRE
+FROM openjdk:17-jdk-slim
+
+# Copie o artefato JAR gerado no estágio anterior
+COPY --from=build /app/target/todolist-0.0.1.jar app.jar
+
+# Exponha a porta em que o aplicativo será executado (se necessário)
 EXPOSE 8080
 
-COPY --from=build /target/todolist-0.0.1.jar app.jar
-
-ENTRYPOINT [ "java", "-jar", "app.jar" ]
+# Comando de entrada para iniciar o aplicativo
+CMD ["java", "-jar", "app.jar"]
